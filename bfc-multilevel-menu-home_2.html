@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFC — Multi-level Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --sidebar-bg: #43a047;
+    --font: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: #eef2f6;
+    padding: 32px;
+    color: #1f2937;
+  }
+
+  /* Material Symbols base */
+  .ms {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'opsz' 20;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #6b7280; margin-bottom: 28px; }
+  .cols { display: grid; grid-template-columns: 340px 1fr; gap: 36px; align-items: start; }
+
+  /* Top bar */
+  .topbar {
+    height: 50px; background: #43a047;
+    border-radius: 8px 8px 0 0;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 16px; position: relative;
+  }
+  .topbar .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #fff; color: #43a047;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .avatar-menu {
+    position: absolute; top: 46px; right: 12px;
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    width: 180px; padding: 6px; z-index: 20;
+    border: 1px solid #e5e7eb; display: none;
+  }
+  .avatar-menu .who { padding: 8px 10px 10px; border-bottom: 1px solid #f3f4f6; margin-bottom: 4px; }
+  .avatar-menu .who .nm { font-size: 13px; font-weight: 600; color: #111827; }
+  .avatar-menu .who .em { font-size: 11px; color: #9ca3af; }
+  .avatar-menu .mi { padding: 9px 10px; font-size: 13px; color: #374151; display: flex; align-items: center; gap: 10px; border-radius: 5px; cursor: pointer; }
+  .avatar-menu .mi:hover { background: #f3f4f6; }
+  .avatar-menu .mi.danger { color: #dc2626; }
+  .avatar-menu .mi.danger:hover { background: #fef2f2; }
+  .avatar-menu .div { height: 1px; background: #f3f4f6; margin: 4px 0; }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--sidebar-bg); color: #fff;
+    border-radius: 0 0 10px 10px; overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    display: flex; flex-direction: column; height: 760px;
+  }
+  .brand {
+    height: 52px; display: flex; align-items: center; gap: 12px;
+    padding: 0 18px; border-bottom: 1px solid rgba(255,255,255,0.10); flex-shrink: 0;
+  }
+  .brand .ham { font-size: 17px; }
+  .brand .name { font-size: 16px; font-weight: 600; }
+  .scroll { flex: 1; overflow-y: auto; }
+
+  /* ---- LEVEL 1 (domain): Master Data, Biomass, FOM, Settlement, Inventory ---- */
+  .l1-head {
+    height: 44px; padding: 0 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+    background: rgba(0,0,0,0.13);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .l1-head:hover { background: rgba(0,0,0,0.18); }
+  .l1-head .lbl {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.3px; color: #fff;
+    display: flex; align-items: center;
+  }
+  .l1-head .caret { font-size: 10px; opacity: 0.7; transition: transform 0.2s; }
+  .l1.open .l1-head .caret { transform: rotate(180deg); }
+  .l1-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: rgba(0,0,0,0.04); }
+  .l1.open .l1-body { max-height: 1400px; }
+
+  /* ---- LEVEL 2 (group): Deals, Operations, Deliveries ---- */
+  .grp-head {
+    height: 36px; padding: 0 18px 0 30px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
+  .grp-head:hover { background: rgba(255,255,255,0.06); }
+  .grp-head .lbl {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+    text-transform: uppercase; color: rgba(255,255,255,0.62);
+  }
+  .grp-head .caret { font-size: 9px; color: rgba(255,255,255,0.5); transition: transform 0.2s; }
+  .grp.open .grp-head .caret { transform: rotate(180deg); }
+  .grp-body { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
+  .grp.open .grp-body { max-height: 600px; }
+
+  /* ---- LEVEL 3 (item) ---- */
+  .item {
+    padding: 9px 16px 9px 52px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: rgba(255,255,255,0.92);
+    cursor: pointer; position: relative;
+    white-space: nowrap; overflow: hidden;
+  }
+  .item:hover { background: rgba(255,255,255,0.08); }
+  .item.active { background: rgba(255,255,255,0.16); font-weight: 500; }
+  .item.active::before {
+    content:''; position:absolute; left:0; top:8px; bottom:8px;
+    width:3px; background:#fff; border-radius:0 3px 3px 0;
+  }
+  .item .ico { font-size: 19px; opacity: 0.85; width: 20px; text-align: center; flex-shrink: 0; }
+  .item .t { overflow: hidden; text-overflow: ellipsis; }
+
+  /* Pinned home (Dashboard) — top-level, slightly more prominent */
+  .pinned .item.home {
+    padding: 12px 16px 12px 18px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .pinned .item.home .ico { opacity: 0.95; }
+  .pinned-div {
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+    margin: 4px 14px;
+  }
+
+  /* L2 items that sit directly under an L1 with no L3 group (e.g. Master Data children) */
+  .l1-direct .item { padding-left: 38px; }
+
+  /* Logout */
+  .logout-zone {
+    flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.12); padding: 6px 0;
+  }
+  .logout-zone .item { opacity: 0.75; padding-left: 18px; }
+  .logout-zone .item:hover { opacity: 1; }
+
+  /* Notes */
+  .notes { font-size: 14px; line-height: 1.6; }
+  .notes h2 { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #111827; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .card .h { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 4px; }
+  .card .b { font-size: 13px; color: #4b5563; }
+  .card code { background:#f3f4f6; padding:1px 5px; border-radius:3px; font-size:12px; }
+  .legend { font-size: 12px; color: #6b7280; line-height: 1.9; margin-top: 8px; }
+  .legend .lv { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Dashboard promoted to top-level Home</h1>
+  <p class="sub">Pinned above all domains · login lands here with every group collapsed.</p>
+
+  <div class="cols">
+
+    <div>
+      <div class="topbar">
+        <div class="avatar" onclick="const m=document.getElementById('am');m.style.display=m.style.display==='block'?'none':'block'">G</div>
+        <div class="avatar-menu" id="am">
+          <div class="who"><div class="nm">Girish</div><div class="em">girish@apprely.com</div></div>
+          <div class="mi"><span class="ms" style="font-size:18px">person</span> Profile</div>
+          <div class="mi"><span class="ms" style="font-size:18px">settings</span> Settings</div>
+          <div class="div"></div>
+          <div class="mi danger"><span class="ms" style="font-size:18px">logout</span> Logout</div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="brand"><span class="ham ms" style="font-size:20px">menu</span><span class="name">BiofuelCircle</span></div>
+
+        <div class="scroll">
+
+          <!-- Pinned home: stable landing slot — points to Dashboard today, can change later -->
+          <div class="pinned">
+            <div class="item home active"><span class="ico ms">home</span><span class="t">Home</span></div>
+          </div>
+          <div class="pinned-div"></div>
+
+          <!-- L1: Master Data — has direct children (no L2 groups) -->
+          <div class="l1 l1-direct">
+            <div class="l1-head"><span class="lbl">Master Data</span><span class="caret">▼</span></div>
+            <div class="l1-body">
+              <div class="item"><span class="ico ms">person</span><span class="t">Agri-Partners</span></div>
+              <div class="item"><span class="ico ms">precision_manufacturing</span><span class="t">Equipments</span></div>
+              <div class="item"><span class="ico ms">tag</span><span class="t">Crop/Deal Ids</span></div>
+            </div>
+          </div>
+
+          <!-- L1: Biomass — wraps L2 groups: Deals, Operations, Deliveries -->
+          <div class="l1">
+            <div class="l1-head"><span class="lbl">Biomass</span><span class="caret">▼</span></div>
+            <div class="l1-body">
+
+              <!-- L2: Deals -->
+              <div class="grp">
+                <div class="grp-head"><span class="lbl">Deals</span><span class="caret">▼</span></div>
+                <div class="grp-body">
+                  <div class="item"><span class="ico ms">input</span><span class="t">Inward Product</span></div>
+                  <div class="item"><span class="ico ms">handshake</span><span class="t">Aggregation</span></div>
+                  <div class="item"><span class="ico ms">output</span><span class="t">Outward Product</span></div>
+                  <div class="item"><span class="ico ms">local_shipping</span><span class="t">Transport</span></div>
+                  <div class="item"><span class="ico ms">build</span><span class="t">Equipment Rental</span></div>
+                </div>
+              </div>
+
+              <!-- L2: Operations -->
+              <div class="grp">
+                <div class="grp-head"><span class="lbl">Operations</span><span class="caret">▼</span></div>
+                <div class="grp-body">
+                  <div class="item"><span class="ico ms">dashboard</span><span class="t">Aggregation Plan</span></div>
+                  <div class="item"><span class="ico ms">calendar_month</span><span class="t">Scheduling</span></div>
+                  <div class="item"><span class="ico ms">folder</span><span class="t">Ledger</span></div>
+                  <div class="item"><span class="ico ms">local_gas_station</span><span class="t">Fuel</span></div>
+                  <div class="item"><span class="ico ms">device_thermostat</span><span class="t">Record Moisture/Temp</span></div>
+                  <div class="item"><span class="ico ms">monitoring</span><span class="t">Heap Temp & Moisture Report</span></div>
+                </div>
+              </div>
+
+              <!-- L2: Deliveries -->
+              <div class="grp">
+                <div class="grp-head"><span class="lbl">Deliveries</span><span class="caret">▼</span></div>
+                <div class="grp-body">
+                  <div class="item"><span class="ico ms">event</span><span class="t">Delivery Planning</span></div>
+                  <div class="item"><span class="ico ms">south</span><span class="t">Inward</span></div>
+                  <div class="item"><span class="ico ms">north</span><span class="t">Outward</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- L1: FOM — direct children -->
+          <div class="l1 l1-direct">
+            <div class="l1-head"><span class="lbl">FOM</span><span class="caret">▼</span></div>
+            <div class="l1-body">
+              <div class="item"><span class="ico ms">local_shipping</span><span class="t">Deliveries</span></div>
+              <div class="item"><span class="ico ms">trending_up</span><span class="t">Prospects</span></div>
+            </div>
+          </div>
+
+          <!-- L1: Settlement — direct children -->
+          <div class="l1 l1-direct">
+            <div class="l1-head"><span class="lbl">Settlement</span><span class="caret">▼</span></div>
+            <div class="l1-body">
+              <div class="item"><span class="ico ms">payments</span><span class="t">Cashflow</span></div>
+              <div class="item"><span class="ico ms">receipt_long</span><span class="t">Invoices</span></div>
+              <div class="item"><span class="ico ms">credit_card</span><span class="t">Payments</span></div>
+              <div class="item"><span class="ico ms">account_balance</span><span class="t">Settlement View</span></div>
+            </div>
+          </div>
+
+          <!-- L1: Inventory — single, no children -->
+          <div class="l1 l1-direct">
+            <div class="l1-head"><span class="lbl">Inventory</span></div>
+          </div>
+
+        </div>
+
+        <div class="logout-zone">
+          <div class="item"><span class="ico ms">logout</span><span class="t">Logout</span></div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#9ca3af;margin-top:8px;text-align:center">Login lands on Dashboard · all groups collapsed · click any domain/group to expand</p>
+    </div>
+
+    <div class="notes">
+      <h2>What changed</h2>
+
+      <div class="card" style="margin-top:0">
+        <div class="h">Dashboard → pinned top-level Home</div>
+        <div class="b">Moved out of Biomass › Operations and pinned above all domain groups. It's a platform-wide overview, not an operations sub-feature — its prominence now matches its importance as the landing page.</div>
+      </div>
+
+      <div class="card" style="background:#f0fdf4;border-color:#bbf7d0">
+        <div class="h">The login state is now clean</div>
+        <div class="b">Because Dashboard is top-level, login lands on it with <strong>every domain group collapsed</strong>. No more auto-expanding Biomass + Operations just to reach the landing page. The menu opens in its sleekest possible state.</div>
+      </div>
+
+      <div class="card">
+        <div class="h">One tap home, always</div>
+        <div class="b">Dashboard sits above the divider, always visible, never buried. Getting back to the overview is a single tap from anywhere — no hunting through Biomass → Operations.</div>
+      </div>
+
+      <div class="legend" style="margin-top:14px">
+        <span class="lv" style="background:rgba(67,160,71,0.92);border:1px solid #ccc"></span><strong>Pinned Home</strong> — Dashboard · 15px medium, top, above divider<br>
+        <span class="lv" style="background:rgba(0,0,0,0.30)"></span><strong>L1 Domain</strong> — Master Data, Biomass, etc. · 13px bold, dark bar<br>
+        <span class="lv" style="background:rgba(255,255,255,0.62);border:1px solid #ccc"></span><strong>L2 Group</strong> — Deals, Operations · 11px uppercase, indent 30px<br>
+        <span class="lv" style="background:rgba(67,160,71,0.92)"></span><strong>L3 Item</strong> — Fuel, Scheduling · 14px, indent 52px
+      </div>
+
+      <div class="card" style="background:#fffbeb;border-color:#fde68a;margin-top:14px">
+        <div class="h">Worth confirming with Saket</div>
+        <div class="b">Is "Dashboard" singular and platform-wide, or are there role/domain-specific dashboards? If multiple, the login landing should be the dashboard matching the user's role — but the top-level Home placement still holds.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.grp-head').forEach(h => {
+    h.addEventListener('click', e => { e.stopPropagation(); h.parentElement.classList.toggle('open'); });
+  });
+  document.querySelectorAll('.l1-head').forEach(h => {
+    h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+  });
+  // Clicking any leaf item sets it active (including pinned Dashboard)
+  document.querySelectorAll('.item').forEach(it => {
+    it.addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.item.active').forEach(a => a.classList.remove('active'));
+      it.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
